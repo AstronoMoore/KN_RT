@@ -8,7 +8,8 @@ from tqdm import tqdm
 from itertools import product
 from matplotlib.pyplot import cm
 
-output_dir = '/Users/thomasmoore/Desktop/' + 'Kilonova_model/'
+# Add your output_dir here!! 
+output_dir = '/Users/thomasmoore/Desktop/' + 'Kilonova_model/' 
 
 def is_decreasing(combination):
     for i in range(1, len(combination)):
