@@ -44,8 +44,6 @@ timestep = 2.4
 directory_path = sys.argv[1]
 csv_files = glob.glob(f"{directory_path}" + '/*.csv')
 
-print(csv_files)
-
 
 for filename in csv_files:
     data = pd.read_csv(filename)

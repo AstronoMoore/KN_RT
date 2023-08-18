@@ -7,6 +7,7 @@ import os
 from tqdm import tqdm
 from itertools import product
 from matplotlib.pyplot import cm
+import gc
 
 # Add your output_dir here!! 
 output_dir = '/Users/thomasmoore/Desktop/' + 'Kilonova_model/' 
@@ -30,7 +31,7 @@ for comb in product(*[array1, array2, array3, array4]):
     if is_decreasing(comb):
         decreasing_combinations.append(comb)
 
-times = np.arange(0.5,8,0.05)
+times = np.arange(0.5,8,0.5)
 
 for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
     target_dir = output_dir +'/temp_'+str(comb[0])+'_'+str(comb[1])+'_'+str(comb[2])+'_'+str(comb[3])
@@ -52,8 +53,8 @@ for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
         print("No output directory - making one!")
         os.makedirs(target_dir)
     for time in tqdm(times, desc=" inner loop", position=1, leave=False):
-        !python Simulation.py 10000 {comb[0]} {comb[1]} {comb[2]} {comb[3]} {time} {target_dir}
-    
+        #!python Simulation.py 10000 {comb[0]} {comb[1]} {comb[2]} {comb[3]} {time} {target_dir}
+        os.system(f'python Simulation.py 10000 {comb[0]} {comb[1]} {comb[2]} {comb[3]} {time} {target_dir}')    
 
-    !python JitterAndHistograms.py {target_dir}
-    !python output_assemble.py {target_dir}
+    os.system(f'python JitterAndHistograms.py {target_dir}')
+    os.system(f'python output_assemble.py {target_dir}')
