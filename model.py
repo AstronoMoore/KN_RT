@@ -49,12 +49,10 @@ for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
                 file_path = os.path.join(target_dir, filename)
                 os.remove(file_path)
                 
-    if os.path.isdir(output_dir) == False:
-        print("No output directory - making one!")
-        os.makedirs(target_dir)
+            if os.path.isdir(output_dir) == False:
+                print("No output directory - making one!")
+                os.makedirs(target_dir)
     for time in tqdm(times, desc=" inner loop", position=1, leave=False):
-        #!python Simulation.py 10000 {comb[0]} {comb[1]} {comb[2]} {comb[3]} {time} {target_dir}
         os.system(f'python Simulation.py 10000 {comb[0]} {comb[1]} {comb[2]} {comb[3]} {time} {target_dir}')    
-
     os.system(f'python JitterAndHistograms.py {target_dir}')
     os.system(f'python output_assemble.py {target_dir}')
