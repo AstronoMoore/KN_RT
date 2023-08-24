@@ -584,20 +584,9 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
         'Scattered': sphere.scattered_check_list,
         'Day': t.to(units.d).value * np.ones(len(total_time))
     }
-    print('reached the stacking')
-
     data_arrays = [value for value in record.values()]
-
-    # Create an unstructured NumPy array by stacking the arrays horizontally
     data_array = np.column_stack(data_arrays)
     return data_array
-    # dataframe = pd.DataFrame(record, columns=['Arrival time', 'Frequency', 'Wavelength', 'BB Flux',
-    #                                          'Time inside kilonova', 'Relative time to observer', 'Direction cosine', 'Scattered', 'Day'])
-    # print(dataframe)
-    # fname=sys.argv[7]+'/' +sys.argv[6]+'Day.csv'
-    # dataframe.to_csv(fname, index = False)
-
-# section used to plot single histogram from individual run of the simulation
 
 
 def example(temp_use, t_use):
@@ -652,6 +641,7 @@ def main():
     for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
         fitting_temps = [10000, comb[0], comb[1], comb[2], comb[3]]
         coeffs = np.polyfit(fitting_times, fitting_temps, 4)
+        output_array = np.empty((0, 9))
 
         for time in tqdm(times, desc=" inner loop", position=1, leave=False):
             temp_use = coeffs[4] + coeffs[3]*time + coeffs[2]*time * \
@@ -663,6 +653,10 @@ def main():
             if (temp_use < 2200):
                 temp_use = 2200
             record = example(temp_use, time*units.d)
+            output_array = np.vstack((output_array, record))
+            print(time)
+
+        np.savetxt('file.txt', output_array, delimiter=',')
 
 
 if __name__ == "__main__":
