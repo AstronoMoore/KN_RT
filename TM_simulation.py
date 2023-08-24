@@ -545,9 +545,6 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
         verbose=verbose, temperature=temp_use)
     sphere.perform_simulation()
 
-    fig = plt.figure(1)
-    ax = fig.add_subplot(111)
-
     if include_analytic_solution:
         if analytic_prediction_available:
             # WARNING: untested
@@ -565,8 +562,6 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
             nu[0] = nu_min
             nu[-1] = nu_max
 
-            ax.plot(nu.to("1e15 Hz"), Fnu_normed,
-                    label=r"formal integration")
         # else:
             # print("Warning: module for analytic solution not available")
 
@@ -583,13 +578,19 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
         'Frequency': sphere.emergent_nu_list,
         'Wavelength': emergent_wavelength_list,
         'BB Flux':  sphere.emergent_weight,
-        'Time inside kilonova': sphere.emergent_clock,
+        'Time inside kilonova': sphere.emergent_clock.value,
         'Relative time to observer': sphere.time_delay_list,
         'Direction cosine': sphere.emergent_mu_list,
         'Scattered': sphere.scattered_check_list,
-        'Day': t.to(units.d).value
+        'Day': t.to(units.d).value * np.ones(len(total_time))
     }
-    return record
+    print('reached the stacking')
+
+    data_arrays = [value for value in record.values()]
+
+    # Create an unstructured NumPy array by stacking the arrays horizontally
+    data_array = np.column_stack(data_arrays)
+    return data_array
     # dataframe = pd.DataFrame(record, columns=['Arrival time', 'Frequency', 'Wavelength', 'BB Flux',
     #                                          'Time inside kilonova', 'Relative time to observer', 'Direction cosine', 'Scattered', 'Day'])
     # print(dataframe)
@@ -611,8 +612,6 @@ def example(temp_use, t_use):
     if (inner_v > 0.20):
         inner_v = 0.2
 
-    # print(temp_use, inner_v, t_use)
-
     record = perform_line_profile_calculation(temp_use,
                                               Rmin=Rmin_default*t_use/t_default*inner_v/0.1, Rmax=Rmax_default*t_use/t_default, lam_min=lam_min_default,
                                               lam_max=lam_max_default, lam_line=lam_line_default,
@@ -630,12 +629,6 @@ def is_decreasing(combination):
 
 def main():
     """Main routine; performs the example calculation"""
-
-    # for i in range(1, len(sys.argv)):
-    # print('argument:', i, 'value:', sys.argv[i])
-
-    # t_fit = float(sys.argv[6])
-    # print(t_fit)
 
     """get fit coefficients - input are temps at 0.5,1.4, 2.4, 3.4 and 4.4"""
     fitting_times = [0.5, 1.4, 2.4, 3.4, 4.4]
@@ -658,27 +651,20 @@ def main():
 
     for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
         fitting_temps = [10000, comb[0], comb[1], comb[2], comb[3]]
-        output_df = pd.DataFrame(columns=['Arrival time', 'Frequency', 'Wavelength', 'BB Flux',
-                                 'Time inside kilonova', 'Relative time to observer', 'Direction cosine', 'Scattered', 'Day'])
         coeffs = np.polyfit(fitting_times, fitting_temps, 4)
-
-        # if (t_fit > 4.4): # what is this?
-        #    t_fit = sys.argv[5]
 
         for time in tqdm(times, desc=" inner loop", position=1, leave=False):
             temp_use = coeffs[4] + coeffs[3]*time + coeffs[2]*time * \
                 time + coeffs[1]*time*time*time+coeffs[0]*time*time*time*time
 
+            if (time > 4.4):
+                temp_use = 2200
+
             if (temp_use < 2200):
                 temp_use = 2200
             record = example(temp_use, time*units.d)
-            # output_df.append(record)
-            output_df.loc[len(output_df)] = record
-
-        output_df.to_csv('single_temp_conbination.csv')
 
 
 if __name__ == "__main__":
 
     main()
-    # plt.show()
