@@ -620,6 +620,9 @@ def main():
     """Main routine; performs the example calculation"""
 
     """get fit coefficients - input are temps at 0.5,1.4, 2.4, 3.4 and 4.4"""
+
+    output_dir = '/Users/thomasmoore/Desktop/' + 'Kilonova_model/'
+
     fitting_times = [0.5, 1.4, 2.4, 3.4, 4.4]
 
     array1 = np.arange(6300, 6300 + 4 * 250, 250)
@@ -639,9 +642,24 @@ def main():
     times = np.arange(0.5, 8, 0.1)
 
     for comb in tqdm(decreasing_combinations, desc=" outer", position=0):
+        target_dir = output_dir + '/temp_' + \
+            str(comb[0])+'_'+str(comb[1])+'_'+str(comb[2])+'_'+str(comb[3])
+        if os.path.isdir(target_dir) == False:
+            print("No output directory - making one!")
+            os.makedirs(target_dir)
+
         fitting_temps = [10000, comb[0], comb[1], comb[2], comb[3]]
         coeffs = np.polyfit(fitting_times, fitting_temps, 4)
         output_array = np.empty((0, 9))
+
+        if os.path.isdir(output_dir) == True:
+            for filename in os.listdir(target_dir):
+                if filename.endswith(".csv"):
+                    file_path = os.path.join(target_dir, filename)
+                    os.remove(file_path)
+                if os.path.isdir(output_dir) == False:
+                    print("No output directory - making one!")
+                    os.makedirs(target_dir)
 
         for time in tqdm(times, desc=" inner loop", position=1, leave=False):
             temp_use = coeffs[4] + coeffs[3]*time + coeffs[2]*time * \
@@ -656,7 +674,7 @@ def main():
             output_array = np.vstack((output_array, record))
             print(time)
 
-        np.savetxt('file.txt', output_array, delimiter=',')
+        np.savetxt(target_dir + '/data.csv', output_array, delimiter=',')
 
 
 if __name__ == "__main__":
