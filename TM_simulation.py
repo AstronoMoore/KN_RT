@@ -84,10 +84,10 @@ t_default = 5.000 * units.d
 lam_min_default = 2000 * units.AA
 lam_max_default = 18000 * units.AA
 lam_line_default = 10500 * units.AA
-vmin_default = 0.1 * constants.c
-vmax_default = 0.35 * constants.c
-Rmin_default = vmin_default * t_default
-Rmax_default = vmax_default * t_default
+vmin_default = 0.1 * constants.c.cgs
+vmax_default = 0.35 * constants.c.cgs
+Rmin_default = vmin_default * t_default.to('s')
+Rmax_default = vmax_default * t_default.to('s')
 
 
 class PropagationError(Exception):
@@ -342,13 +342,14 @@ class mc_packet(object):
                 # self.print_info("Line Interaction")
                 self.perform_interaction()
                 self.check_for_boundary_intersection()
-                self.scattered = True
                 if self.boundint == "inner":
+                    self.scattered = True
                     # self.print_info("Intersecting inner boundary")
                     self.fate = "absorbed"
                 else:
                     # self.print_info("Reaching outer boundary")
                     self.fate = "escaped"
+                    self.scattered = True
 
                     '''calculate the relative extra distance a packet has to travel
                     given the trajectory it escapes with'''
@@ -359,6 +360,7 @@ class mc_packet(object):
                     self.relative_time = self.relative_distance / constants.c.cgs.value
             else:
                 self.fate = "escaped"
+                self.scattered = False
 
                 '''calculate the relative extra distance a packet has to travel
                 given the trajectory it escapes with'''
