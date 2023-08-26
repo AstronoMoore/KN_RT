@@ -74,7 +74,7 @@ np.random.seed(42)
     distance from the centre of the event
     tau_sobolev_default = 0.5 and gamma_default = -2
     found to be the best fit values for the data'''
-    
+
 tau_sobolev_default = 1.0
 gamma_default = -3
 t_default = 5.000 * units.d
@@ -85,6 +85,7 @@ vmin_default = 0.1 * constants.c
 vmax_default = 0.35 * constants.c
 Rmin_default = vmin_default * t_default
 Rmax_default = vmax_default * t_default
+
 
 class PropagationError(Exception):
     pass
@@ -122,12 +123,12 @@ class mc_packet(object):
     verbose : boolean
         flag controlling the output to stdout (default False)
     """
-    #gamma = correction factor in power law for optical depth calculation
+    # gamma = correction factor in power law for optical depth calculation
 
-    def __init__(self, Rmin= Rmin_default.value, Rmax= Rmax_default.value,
-                 nu_min = constants.c / lam_max_default, nu_max = constants.c / lam_min_default,
-                 nu_line= constants.c / lam_line_default, tau_sobolev=tau_sobolev_default, gamma = gamma_default,
-                 t= t_default.to("s").value, verbose=False, temperature = 3000.0):
+    def __init__(self, Rmin=Rmin_default.value, Rmax=Rmax_default.value,
+                 nu_min=constants.c / lam_max_default, nu_max=constants.c / lam_min_default,
+                 nu_line=constants.c / lam_line_default, tau_sobolev=tau_sobolev_default, gamma=gamma_default,
+                 t=t_default.to("s").value, verbose=False, temperature=3000.0):
 
         self.verbose = verbose
 
@@ -142,8 +143,8 @@ class mc_packet(object):
         self.tau_sob = tau_sobolev
 
         # consistency check
-        assert(self.Rmin < self.Rmax)
-        assert(self.nu_max > self.nu_min)
+        assert (self.Rmin < self.Rmax)
+        assert (self.nu_max > self.nu_min)
 
         # initializing the packets at the inner boundary; no limb darkening,
         # flat SED between nu_min and nu_max
@@ -154,11 +155,12 @@ class mc_packet(object):
         #                 a distance = radius of the kilonova
         self.r = self.Rmin
         self.mu = np.sqrt(np.random.rand(1)[0])
-        self.l_track = -99e30 #self.Rmax - self.Rmin
-        self.nu = self.nu_min + (self.nu_max - self.nu_min) * np.random.rand(1)[0]
+        self.l_track = -99e30  # self.Rmax - self.Rmin
+        self.nu = self.nu_min + \
+            (self.nu_max - self.nu_min) * np.random.rand(1)[0]
         self.t = t
         self.emergent_weight = 0.0
-        self.clock = None #(self.Rmax - self.Rmin) / constants.c.cgs.value
+        self.clock = None  # (self.Rmax - self.Rmin) / constants.c.cgs.value
 
         # LF frequency of packet when it emerges from the surface of the
         # homologous sphere
@@ -167,7 +169,8 @@ class mc_packet(object):
         self.relative_time = 0
         # Total time taken for packets to travel to observer
         # = time taken for packets to escape + relative time delay
-        self.total_time = None #(self.Rmax - self.Rmin) / constants.c.cgs.value
+        # (self.Rmax - self.Rmin) / constants.c.cgs.value
+        self.total_time = None
         # distance to next interaction in optical depth space
         self.tau_int = None
         # distance to nearest boundary
@@ -180,7 +183,7 @@ class mc_packet(object):
         self.fate = None
         # flag describing whether packet has been propagated or not
         self.propagated = False
-        #flag describing whether packet interacts and is scattered or not
+        # flag describing whether packet interacts and is scattered or not
         self.scattered = False
 
         self.draw_new_tau()
@@ -264,30 +267,28 @@ class mc_packet(object):
     # astropy's inbuilt bb func NOT used to avoid issues arising
     # in working with wavelength vs frequency
 
-    def bb_lam(self,wavelength, temperature):
-        
+    def bb_lam(self, wavelength, temperature):
+
         h = 6.62607015e-34
         c = 299792458
         k_B = 1.380649e-23
         a = 2.0 * h * (c ** 2)
         b = (h * c) / (wavelength * k_B * temperature)
-        flux = a / (( pow(wavelength,5) ) * (np.exp(b) - 1.0))
+        flux = a / ((pow(wavelength, 5)) * (np.exp(b) - 1.0))
 
-        return(flux)
+        return (flux)
 
-    def bb_nu(self,freq, temperature):
-        
+    def bb_nu(self, freq, temperature):
+
         h = 6.62607015e-34
         c = 299792458
         k_B = 1.380649e-23
         a = 2.0 * h / (c ** 2)
         b = (h * freq) / (k_B * temperature)
-        flux = a * pow(freq,2) / (np.exp(b) - 1.0)
+        flux = a * pow(freq, 2) / (np.exp(b) - 1.0)
 
-        return(flux)
+        return (flux)
 
-
-    
     def propagate(self):
         """Perform packet propagation
         The packet is propagated through the spherical domain until it either
@@ -301,15 +302,16 @@ class mc_packet(object):
         beta = self.r / self.t / constants.c.cgs.value
         nu_cmf = self.nu*(1. - beta * self.mu)
 #        lam_cmf = constants.c.cgs.value/self.nu
-        self.emergent_weight = self.bb_nu(nu_cmf, self.temperature)*self.r*self.r/nu_cmf
-        
+        self.emergent_weight = self.bb_nu(
+            nu_cmf, self.temperature)*self.r*self.r/nu_cmf
+
         if self.propagated:
             raise PropagationError(
                 "Packet has already been propagated!"
             )
 
         if self.lbound < self.lsob or self.lsob < 0:
-            #self.print_info("Reaching outer boundary")
+            # self.print_info("Reaching outer boundary")
             self.fate = "escaped"
 
             '''calculate the relative extra distance a packet has to travel
@@ -322,26 +324,27 @@ class mc_packet(object):
             self.relative_time = self.relative_distance / constants.c.cgs.value
 
         else:
-            #self.print_info("Reaching Sobolev point")
+            # self.print_info("Reaching Sobolev point")
             self.update_position_direction(self.lsob)
-                
+
             '''Apply correction factor so optical depth is not considered constant
             and instead changes with radius
             Gamma is the exponential term in a power law relationship'''
 
 #            self.tau_corrected = self.tau_sob * ((self.r / (self.Rmax - self.Rmin)) ** self.gamma)
-            self.tau_corrected = self.tau_sob * ((self.r / self.Rmin) ** self.gamma)
+            self.tau_corrected = self.tau_sob * \
+                ((self.r / self.Rmin) ** self.gamma)
 
             if self.tau_corrected >= self.tau_int:
-                #self.print_info("Line Interaction")
+                # self.print_info("Line Interaction")
                 self.perform_interaction()
                 self.check_for_boundary_intersection()
                 self.scattered = True
                 if self.boundint == "inner":
-                    #self.print_info("Intersecting inner boundary")
+                    # self.print_info("Intersecting inner boundary")
                     self.fate = "absorbed"
                 else:
-                    #self.print_info("Reaching outer boundary")
+                    # self.print_info("Reaching outer boundary")
                     self.fate = "escaped"
 
                     '''calculate the relative extra distance a packet has to travel
@@ -356,9 +359,9 @@ class mc_packet(object):
 
                 '''calculate the relative extra distance a packet has to travel
                 given the trajectory it escapes with'''
-                
+
                 self.l_track = self.lbound
-#CHECK                
+# CHECK
                 self.update_position_direction(self.lbound - self.lsob)
 #                self.relative_distance = self.Rmax - (self.Rmax * (self.mu))
                 self.relative_distance = -1.*(self.Rmax * (self.mu))
@@ -374,8 +377,6 @@ class mc_packet(object):
         self.scattered = self.scattered
 
 
-
-        
 class homologous_sphere(object):
     """
     Class describing the sphere in homologous expansion in which the MCRT
@@ -410,11 +411,12 @@ class homologous_sphere(object):
     npacks : int
         number of packets in the MCRT simulation (default 10000)
     """
+
     def __init__(self, Rmin=Rmin_default, Rmax=Rmax_default,
                  lam_min=lam_min_default, lam_max=lam_max_default,
                  lam_line=lam_line_default, tau_sobolev=tau_sobolev_default,
                  t=t_default, verbose=False, npacks=10000, temperature=3000.0):
-        
+
         t = t.to("s").value
         Rmin = Rmin.to("cm").value
         Rmax = Rmax.to("cm").value
@@ -454,8 +456,8 @@ class homologous_sphere(object):
                 self.time_delay.append(pack.time_delay)
                 self.l_store.append(pack.l_store)
                 self.scattered_check.append(pack.scattered)
-            #if (i % 10000) == 0:
-                #print("{:d} of {:d} packets done".format(i, self.npacks))
+            # if (i % 10000) == 0:
+                # print("{:d} of {:d} packets done".format(i, self.npacks))
 
         self.emergent_nu = (np.array(self.emergent_nu) * units.Hz)
         self.emergent_clock = (np.array(self.emergent_clock) * units.second)
@@ -468,10 +470,6 @@ class homologous_sphere(object):
         self.scattered_check_list = self.scattered_check
 
 
-
-
-
-        
 def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_default,
                                      lam_min=lam_min_default,
                                      lam_max=lam_max_default,
@@ -535,9 +533,9 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
 
     npoints = 500
 
-    #print("Using Rmin: ", Rmin, " Rmax: ", Rmax, " t: ", t)
-    #print("Using Tbb: ", temp_use)
-    
+    # print("Using Rmin: ", Rmin, " Rmax: ", Rmax, " t: ", t)
+    # print("Using Tbb: ", temp_use)
+
     sphere = homologous_sphere(
         Rmin=Rmin, Rmax=Rmax, lam_min=lam_min, lam_max=lam_max,
         lam_line=lam_line, tau_sobolev=tau_sobolev_default, t=t, npacks=npacks,
@@ -566,39 +564,40 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
 
             ax.plot(nu.to("1e15 Hz"), Fnu_normed,
                     label=r"formal integration")
-        #else:
-            #print("Warning: module for analytic solution not available")
-   
+        # else:
+            # print("Warning: module for analytic solution not available")
+
     total_time = sphere.emergent_clock + sphere.time_delay
     total_time = np.array(total_time)
     total_time_list = total_time.tolist()
     emergent_wavelength_convert = constants.c.value / sphere.emergent_nu.value
     emergent_wavelength_list = emergent_wavelength_convert.tolist()
-     #bb_wavelength_list = sphere.emergent_weight.tolist()
+    # bb_wavelength_list = sphere.emergent_weight.tolist()
 
-    #create pandas dataframe
+    # create pandas dataframe
 
     record = {
-              'Arrival time': total_time_list,
-              'Frequency': sphere.emergent_nu_list,
-              'Wavelength': emergent_wavelength_list,
-              'BB Flux':  sphere.emergent_weight,
-              'Time inside kilonova': sphere.emergent_clock,
-              'Relative time to observer': sphere.time_delay_list,
-              'Direction cosine': sphere.emergent_mu_list,
-              'Scattered': sphere.scattered_check_list,
-              'Day': t.to(units.d).value
+        'Arrival time': total_time_list,
+        'Frequency': sphere.emergent_nu_list,
+        'Wavelength': emergent_wavelength_list,
+        'BB Flux':  sphere.emergent_weight,
+        'Time inside kilonova': sphere.emergent_clock,
+        'Relative time to observer': sphere.time_delay_list,
+        'Direction cosine': sphere.emergent_mu_list,
+        'Scattered': sphere.scattered_check_list,
+        'Day': t.to(units.d).value
     }
 
-    dataframe = pd.DataFrame(record, columns = ['Arrival time', 'Frequency', 'Wavelength', 'BB Flux',
-                                               'Time inside kilonova', 'Relative time to observer', 'Direction cosine', 'Scattered', 'Day'])
+    dataframe = pd.DataFrame(record, columns=['Arrival time', 'Frequency', 'Wavelength', 'BB Flux',
+                                              'Time inside kilonova', 'Relative time to observer', 'Direction cosine', 'Scattered', 'Day'])
 
-    #print(dataframe)
+    # print(dataframe)
 
-    fname=sys.argv[7]+'/' +sys.argv[6]+'Day.csv'
-    dataframe.to_csv(fname, index = False)
+    fname = sys.argv[7]+'/' + sys.argv[6]+'Day.csv'
+    dataframe.to_csv(fname, index=False)
 
 # section used to plot single histogram from individual run of the simulation
+
 
 '''    ax.hist(sphere.emergent_nu.to('AA', equivalencies = units.spectral()),
             bins=np.linspace(lam_min, lam_max, nbins),
@@ -618,48 +617,54 @@ def perform_line_profile_calculation(temp_use, Rmin=Rmin_default, Rmax=Rmax_defa
     if save_to_pdf:
         fig.savefig("line_profile.pdf")
 '''
+
+
 def example(temp_use, t_use):
     """Perform the MCRT test simulation from the review"""
 
     """Use Gillanders fit for inner boundary"""
-    inner_v = 4.33246154e-01 -1.17547436e-01*t_use.value +9.93589744e-05*t_use.value*t_use.value+4.83974359e-03*t_use.value*t_use.value*t_use.value-5.60897436e-04*t_use.value*t_use.value*t_use.value*t_use.value
+    inner_v = 4.33246154e-01 - 1.17547436e-01*t_use.value + 9.93589744e-05*t_use.value*t_use.value+4.83974359e-03 * \
+        t_use.value*t_use.value*t_use.value-5.60897436e-04 * \
+        t_use.value*t_use.value*t_use.value*t_use.value
     if (inner_v < 0.05):
         inner_v = 0.05
     if (inner_v > 0.20):
         inner_v = 0.2
 
-    #print(temp_use, inner_v, t_use)
+    # print(temp_use, inner_v, t_use)
 
     perform_line_profile_calculation(temp_use,
-        Rmin=Rmin_default*t_use/t_default*inner_v/0.1, Rmax=Rmax_default*t_use/t_default, lam_min=lam_min_default,
-        lam_max=lam_max_default, lam_line=lam_line_default,
-        tau_sobolev=tau_sobolev_default, t=t_use, verbose=False,
-        npacks=100000, nbins=100, npoints=500, save_to_pdf=True)
+                                     Rmin=Rmin_default*t_use/t_default*inner_v/0.1, Rmax=Rmax_default*t_use/t_default, lam_min=lam_min_default,
+                                     lam_max=lam_max_default, lam_line=lam_line_default,
+                                     tau_sobolev=tau_sobolev_default, t=t_use, verbose=False,
+                                     npacks=100000, nbins=100, npoints=500, save_to_pdf=True)
 
 
 def main():
     """Main routine; performs the example calculation"""
 
-    #for i in range(1, len(sys.argv)):
-        #print('argument:', i, 'value:', sys.argv[i])
+    # for i in range(1, len(sys.argv)):
+    # print('argument:', i, 'value:', sys.argv[i])
 
     t_fit = float(sys.argv[6])
-    #print(t_fit)
+    # print(t_fit)
 
     """get fit coefficients - input are temps at 0.5,1.4, 2.4, 3.4 and 4.4"""
-    fitting_times=[0.5,1.4,2.4,3.4,4.4]
-    fitting_temps=[float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),float(sys.argv[4]),float(sys.argv[5])]
+    fitting_times = [0.5, 1.4, 2.4, 3.4, 4.4]
+    fitting_temps = [float(sys.argv[1]), float(sys.argv[2]), float(
+        sys.argv[3]), float(sys.argv[4]), float(sys.argv[5])]
     coeffs = np.polyfit(fitting_times, fitting_temps, 4)
-    
-    temp_use=coeffs[4] + coeffs[3]*t_fit + coeffs[2]*t_fit*t_fit + coeffs[1]*t_fit*t_fit*t_fit+coeffs[0]*t_fit*t_fit*t_fit*t_fit
+
+    temp_use = coeffs[4] + coeffs[3]*t_fit + coeffs[2]*t_fit*t_fit + \
+        coeffs[1]*t_fit*t_fit*t_fit+coeffs[0]*t_fit*t_fit*t_fit*t_fit
 
     if (temp_use < 2200):
         temp_use = 2200
 
     if (t_fit > 4.4):
         t_fit = sys.argv[5]
-    
-    t_use=float(sys.argv[6])*units.d
+
+    t_use = float(sys.argv[6])*units.d
 
     example(temp_use, t_use)
 
@@ -667,4 +672,4 @@ def main():
 if __name__ == "__main__":
 
     main()
-    #plt.show()
+    # plt.show()
