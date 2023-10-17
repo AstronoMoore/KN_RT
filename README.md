@@ -1,1 +1,1 @@
-# KN_RT
+# Kilonova Radiative Transfer code project
