@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/ussim/bin/env python
 # MIT License
 #
 # Copyright (c) 2018 Ulrich Noebauer
